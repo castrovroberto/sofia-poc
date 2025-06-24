@@ -1,0 +1,9 @@
+langchain==0.1.20
+langchain-community==0.0.38
+pypdf==4.2.0
+sentence-transformers==2.7.0
+faiss-cpu==1.8.0
+unstructured
+# Open AI
+langchain-openai
+openai

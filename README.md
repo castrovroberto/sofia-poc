@@ -68,3 +68,9 @@ docker run -it --rm \
 ---
 
 This is a learning project, and any feedback is welcome.
+
+## Example
+
+Here is an example of the system in action, answering a question about the "Chain of Density" concept:
+
+![Sofia RAG System in Action](images/sofia.png)

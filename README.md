@@ -23,7 +23,7 @@ This system was designed with a **Docker-first approach**. The entire applicatio
 
 1.  **Clone the Repository**:
     ```bash
-    git clone <your-repo-url>
+    git clone https://github.com/castrovroberto/sofia-poc
     cd sofia-poc
     ```
 
@@ -42,11 +42,11 @@ The system is configured via environment variables when you launch the container
 
 #### Option 1: Using OpenAI (Default)
 
-Replace `'your-api-key-here'` with your actual OpenAI API key.
+Replace `'your-super-secret-api-key'` with your actual OpenAI API key.
 
 ```bash
 docker run -it --rm \
-  -e OPENAI_API_KEY='your-api-key-here' \
+  -e OPENAI_API_KEY='your-super-secret-api-key' \
   -v "$(pwd)/pdfs":/app/pdfs \
   -v "$(pwd)/faiss_index_openai":/app/faiss_index_openai \
   rag-system

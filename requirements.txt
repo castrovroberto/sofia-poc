@@ -4,6 +4,7 @@ pypdf==4.2.0
 sentence-transformers==2.7.0
 faiss-cpu==1.8.0
 unstructured
+beautifulsoup4
 # Open AI
 langchain-openai
 openai

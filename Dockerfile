@@ -8,12 +8,18 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rag_system.py script
+# Copy the application files
 COPY rag_system.py .
+COPY config.py .
+COPY providers/ ./providers/
+COPY loaders/ ./loaders/
 
-# Create the directory for PDFs and the FAISS index.
+# Create the directories for the sources and the FAISS index.
 # We will mount host volumes to these paths at runtime.
-RUN mkdir -p pdfs faiss_index
+RUN mkdir -p pdfs markdown faiss_index_openai faiss_index_ollama
+
+# Copy the urls.txt file if it exists
+COPY urls.txt .
 
 # Command to run the application when the container starts
 # Using -u option for unbuffered output, helpful for seeing logs in real-time

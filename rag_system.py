@@ -1,9 +1,16 @@
 import os
+import warnings
 import logging
+from langchain_community.document_loaders import (
+    PyPDFLoader,
+    DirectoryLoader,
+    UnstructuredMarkdownLoader,
+)
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
+from config import SOURCES, CHUNK_SIZE, CHUNK_OVERLAP, PROMPT_TEMPLATE
 
 import config
 from providers.base import LLMProvider
@@ -13,8 +20,43 @@ from loaders.pdf_loader import PDFLoader
 from loaders.markdown_loader import MarkdownLoader
 from loaders.url_loader import URLLoader
 
-# --- Basic Logging Setup ---
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Filter out specific deprecation warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='pypdf')
+
+# --- Provider-specific imports ---
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()
+
+if LLM_PROVIDER == "openai":
+    from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+elif LLM_PROVIDER == "ollama":
+    from langchain_community.embeddings import HuggingFaceEmbeddings
+    from langchain_community.llms import Ollama
+else:
+    raise ValueError(f"Unsupported LLM_PROVIDER: {LLM_PROVIDER}. Please use 'openai' or 'ollama'.")
+
+# --- Configuration ---
+PDF_DIR = "/app/pdfs"
+CHUNK_SIZE = 1000
+CHUNK_OVERLAP = 200
+
+# --- Dynamic Configuration based on Provider ---
+if LLM_PROVIDER == "openai":
+    logger.info("Using OpenAI provider.")
+    EMBEDDING_MODEL_NAME = "text-embedding-ada-002"
+    VECTOR_DB_PATH = "/app/faiss_index_openai"
+    if "OPENAI_API_KEY" not in os.environ:
+        raise ValueError("OPENAI_API_KEY environment variable not set for OpenAI provider.")
+else: # ollama
+    logger.info("Using Ollama provider.")
+    EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+    VECTOR_DB_PATH = "/app/faiss_index_ollama"
 
 class RAGSystem:
     """A class to encapsulate the entire RAG system logic."""
@@ -47,26 +89,43 @@ class RAGSystem:
         for source in self.SOURCES:
             source_type = source["type"]
             source_path = source["path"]
+            is_recursive = source.get("recursive", True)
 
-            if source_type in self.loaders:
-                if os.path.exists(source_path):
-                    logging.info(f"Loading documents from {source_path} using {source_type} loader...")
-                    try:
-                        loader = self.loaders[source_type]
-                        documents = loader.load(source_path)
-                        all_documents.extend(documents)
-                    except Exception as e:
-                        logging.error(f"Error loading {source_path}: {e}")
-                else:
-                    logging.warning(f"Source path not found: {source_path}")
-            else:
-                logging.warning(f"Unsupported source type: {source_type}")
-
-        if not all_documents:
-            logging.warning("No documents were loaded. Please check the sources in your config file.")
-        else:
-            logging.info(f"Loaded a total of {len(all_documents)} documents.")
+            if not os.path.exists(source_path):
+                logger.warning(f"Source path not found: {source_path}")
+                continue
             
+            try:
+                logger.info(f"Loading documents from {source_path} using {source_type} loader...")
+                
+                if source_type == "pdf":
+                    if os.path.isdir(source_path):
+                        loader = DirectoryLoader(
+                            source_path,
+                            glob="**/*.pdf" if is_recursive else "*.pdf",
+                            loader_cls=PyPDFLoader
+                        )
+                        docs = loader.load()
+                        all_documents.extend(docs)
+                        logger.info(f"Loaded {len(docs)} PDF documents from {source_path}")
+                
+                elif source_type == "markdown":
+                    if os.path.isdir(source_path):
+                        loader = DirectoryLoader(
+                            source_path,
+                            glob="**/*.md" if is_recursive else "*.md",
+                            loader_cls=UnstructuredMarkdownLoader
+                        )
+                        docs = loader.load()
+                        all_documents.extend(docs)
+                        logger.info(f"Loaded {len(docs)} Markdown documents from {source_path}")
+                
+            except Exception as e:
+                logger.error(f"Error loading from {source_path}: {str(e)}")
+        
+        if not all_documents:
+            logger.warning("No documents were loaded. Please check that your source directories contain supported files.")
+        
         return all_documents
 
     def _split_documents(self, documents):

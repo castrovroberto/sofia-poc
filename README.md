@@ -7,7 +7,7 @@ This system was designed with a **Docker-first approach**. The entire applicatio
 ## Features
 
 *   **Question-Answering**: Ask questions in natural language about your documents.
-*   **Multi-Document Support**: Ingests both PDF (`.pdf`) and Markdown (`.md`) files.
+*   **Multi-Document Support**: Ingests PDF (`.pdf`), Markdown (`.md`), and URLs from a `urls.txt` file.
 *   **Switchable LLM Providers**: Easily switch between the **OpenAI API** and a local **Ollama** instance by setting an environment variable at runtime.
 *   **Persistent Vector Store**: Saves document embeddings to a local directory (`faiss_index_*`) so you don't have to re-process files every time you start the container.
 
@@ -28,17 +28,31 @@ This system was designed with a **Docker-first approach**. The entire applicatio
     ```
 
 2.  **Add Documents**:
-    Place your `.pdf` and `.md` files into the `pdfs/` directory.
+    Place your `.pdf` files into the `pdfs/` directory. You can also add `.md` files and a `urls.txt` file with a list of URLs to be processed.
 
-3.  **Build the Docker Image**:
-    This command builds the container image and installs all dependencies.
+3.  **Quick Start**:
+    The easiest way to get started is to use our quick start script:
+    ```bash
+    chmod +x scripts/quick_start.sh
+    ./scripts/quick_start.sh
+    ```
+    This script will:
+    - Check if Docker is running
+    - Build the Docker image
+    - Let you choose between OpenAI and Ollama
+    - Handle the container setup automatically
+
+### Manual Setup
+
+If you prefer to run commands manually, you can:
+
+1.  **Build the Docker Image**:
     ```bash
     docker build -t rag-system .
     ```
 
-### How to Run
-
-The system is configured via environment variables when you launch the container.
+2.  **Run the Container**:
+    Choose one of the following options:
 
 #### Option 1: Using OpenAI (Default)
 

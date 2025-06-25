@@ -195,7 +195,8 @@ cython_debug/
 
 # application specific
 pdfs/
-faiss_index/
+faiss_index_openai/
+faiss_index_ollama/
 
 # MAC files 
 .DS_Store
